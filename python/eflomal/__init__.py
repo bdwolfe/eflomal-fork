@@ -191,7 +191,7 @@ def calculate_priors(src_sentences, trg_sentences,
         for j, fert in rev_fert.items():
             ferr_priors[(trg_sent[j], fert)] += 1
     # TODO: confirm EOF in all files
-    return priors, hmmf_priors, hmmr_priors, ferf_priors, ferr_priors
+    return priors, hmmf_priors, hmmr_priors, ferf_priors, ferr_priors   # BW: these are just counts from the sentence alignments
 
 
 def write_priors(priorsf, priors_list, hmmf_priors, hmmr_priors,
