@@ -33,3 +33,12 @@ python/eflomal/bin
 # Debug files
 *.dSYM/
 *.su
+
+
+build/
+
+python/eflomal.egg-info/
+
+fwd_links_output.txt
+reverse_links_output.txt
+python/eflomal/eflomal.c
