@@ -23,6 +23,8 @@ To install the complete Python package, run:
 
 	python -m pip install .
 
+For newer Ubuntu distributions, add --break-system-packages at the end of the pip command.
+
 If you want to compile and install only the C binary, run:
 
     make -C src
