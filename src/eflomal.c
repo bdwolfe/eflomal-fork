@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <math.h>
 #include <inttypes.h>
 #include <assert.h>
 #include <time.h>
@@ -715,6 +716,59 @@ void text_alignment_make_counts(struct text_alignment *ta) {
         ta->inv_source_count_sum[i] = (count)1.0 / ta->inv_source_count_sum[i];
 }
 
+void print_ta_lexical(const struct text_alignment *ta) {
+
+    printf("source_count:\n");
+    for (size_t src_word=0; src_word<ta->source->vocabulary_size; src_word++) {
+          struct map_token_u32 *sc = ta->source_count + src_word;
+          token target_words[sc->n_items];
+          uint32_t target_counts[sc->n_items];
+          map_token_u32_items(sc, target_words, target_counts);
+
+          uint32_t source_sum_check = 0;
+
+          printf("    source_word %zu:\n", src_word);
+          for(size_t item_index=0; item_index<sc->n_items; item_index++){
+            printf("        target_word %3u: count %u\n", target_words[item_index],
+                    target_counts[item_index]);
+
+            source_sum_check += target_counts[item_index];
+          }
+
+          printf("    sum_check           = %u\n", source_sum_check);
+          printf("    sum from struct     = %u\n", (uint32_t) (1.0/ta->inv_source_count_sum[src_word]));
+          printf("    inv sum from struct = %lf\n", ta->inv_source_count_sum[src_word]);
+          printf("\n");
+    }
+    printf("\n");
+
+
+    const size_t n_sentences =
+        ta->n_clean? ta->n_clean: ta->target->n_sentences;
+
+    printf("links:\n");
+    for (size_t sent=0; sent<n_sentences; sent++) {
+        printf("    For sentence %zu...\n", sent);
+        link_t *links = ta->sentence_links[sent];
+        //if (links == NULL) continue;
+        const struct sentence *source_sentence = ta->source->sentences[sent];
+        const struct sentence *target_sentence = ta->target->sentences[sent];
+        const size_t target_length = target_sentence->length;
+
+        for (size_t tgt_pos=0; tgt_pos<target_length; tgt_pos++) {
+            const link_t src_pos = links[tgt_pos];
+            const token src_word = (src_pos == NULL_LINK)? 0 : source_sentence->tokens[src_pos];
+            const token tgt_word = target_sentence->tokens[tgt_pos];
+
+            printf("        tgt_word %u at position %zu links to src_word %u at position %d\n",
+            tgt_word, tgt_pos, src_word, src_pos);
+
+        }
+    }
+    printf("\n");
+    
+}
+
 void text_alignment_randomize(struct text_alignment *ta, random_state *state) {
     struct sentence **source_sentences = ta->source->sentences;
     struct sentence **target_sentences = ta->target->sentences;
@@ -1208,9 +1262,19 @@ static void align(
 
                 text_alignment_make_counts(tas[i]);
 
+                //debug
+                printf("BEFORE SAMPLING...\n");
+                print_ta_lexical(tas[i]);
+
                 for (int j=0; j<n_iters[m-1]; j++) {
                     text_alignment_sample(tas[i], &local_state, NULL, NULL, 1);
+
+                    //debug
+                    printf("AFTER SAMPLING iteration %d of %d...\n", j+1, n_iters[m-1]);
+                    print_ta_lexical(tas[i]);
                 }
+
+
             }
             if (!quiet)
                 fprintf(stderr, "Done: %.3f s\n", seconds() - t0);
@@ -1361,7 +1425,9 @@ int main(int argc, char *argv[]) {
     }
 
 #pragma omp parallel for
-    for (int reverse=0; reverse<=1; reverse++) {
+    //for (int reverse=0; reverse<=1; reverse++) {
+    //debug
+    for (int reverse=0; reverse<=0; reverse++) {
         char *links_filename =
             (reverse? links_filename_rev: links_filename_fwd);
         char *scores_filename =
